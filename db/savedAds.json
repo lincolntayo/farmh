@@ -1,0 +1,16 @@
+[
+  {
+    "productImage": "",
+    "type": "sell",
+    "productName": "Tomatoes",
+    "category": "fruits",
+    "location": "Kano, Nigeria",
+    "quantity": 40,
+    "description": "Lorem ipsum dolor sit amet consectetur adipisicing elit. Corrupti maxime delectus quae ipsa consequuntur iure rerum perferendis dolor neque veritatis tenetur labore modi, aperiam qui, sed ea, nesciunt voluptatibus ab.",
+    "priceFrom": 2500,
+    "priceTo": 3500,
+    "availableFrom": "30/10/2025",
+    "availableUntil": "12/11/2025",
+    "unit": "kg"
+  }
+]

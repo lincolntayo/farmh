@@ -1,0 +1,14 @@
+[
+  {
+    "name": "John Doe",
+    "farmName": "Feeds Afrika",
+    "phoneNumber": "08041941922",
+    "email": "admin@mail.com",
+    "password": "admin1234",
+    "country": "Nigeria",
+    "state": "Lagos",
+    "address": "The farm place, Epe",
+    "accountType": "seller",
+    "photoID": ""
+  }
+]
