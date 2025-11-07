@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -9,17 +10,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 import { router, useLocalSearchParams } from "expo-router";
 import ads from "../../db/ads.json";
 
 export default function MarketPlace() {
   const { adsType } = useLocalSearchParams();
 
-  if (!adsType) {
-    router.push("/marketplace?adsType=sell");
-    return;
-  }
+  useEffect(() => {
+    if (!adsType) {
+      router.replace("/marketplace?adsType=sell");
+    }
+  }, [adsType]);
+
+  if (!adsType) return null;
 
   const filteredAds = ads.filter((ad) => ad.type === adsType);
 
@@ -27,9 +30,7 @@ export default function MarketPlace() {
     <View className="flex-1">
       <Header />
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-        }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 py-3">
@@ -56,7 +57,9 @@ export default function MarketPlace() {
           <View className="bg-gray rounded-full mt-4 h-9 flex-row">
             <TouchableOpacity
               onPress={() => router.push("/marketplace?adsType=sell")}
-              className={`flex-1 h-full justify-center flex-row items-center ${adsType === "sell" && "bg-deep-gray"} rounded-full`}
+              className={`flex-1 h-full justify-center flex-row items-center ${
+                adsType === "sell" && "bg-deep-gray"
+              } rounded-full`}
             >
               <Text className="text-xs font-poppins text-center rounded-full">
                 Farmer Ads
@@ -64,7 +67,9 @@ export default function MarketPlace() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className={`flex-1 h-full justify-center flex-row items-center rounded-full ${adsType === "buy" && "bg-deep-gray"}`}
+              className={`flex-1 h-full justify-center flex-row items-center rounded-full ${
+                adsType === "buy" && "bg-deep-gray"
+              }`}
               onPress={() => router.push("/marketplace?adsType=buy")}
             >
               <Text className="text-xs font-poppins text-center rounded-full">

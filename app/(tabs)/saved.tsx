@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -8,17 +9,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
 import { router, useLocalSearchParams } from "expo-router";
 import savedAds from "../../db/savedAds.json";
 
 export default function Saved() {
   const { adsType } = useLocalSearchParams();
 
-  if (!adsType) {
-    router.push("/saved?adsType=sell");
-    return;
-  }
+  useEffect(() => {
+    if (!adsType) {
+      router.replace("/saved?adsType=sell"); //  use replace to avoid looping
+    }
+  }, [adsType]);
+
+  if (!adsType) return null; // Prevent rendering before redirect happens
 
   const filteredAds = savedAds.filter((ad) => ad.type === adsType);
 
@@ -26,15 +29,13 @@ export default function Saved() {
     <View className="flex-1">
       <Header />
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-        }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 py-3">
           <Text className="text-xl font-poppins-medium mb-3">Saved</Text>
           <Text className="text-xs font-poppins mb-3">
-            Your favoritefarmers and products
+            Your favorite farmers and products
           </Text>
 
           <View className="flex-row gap-x-4">
@@ -42,7 +43,6 @@ export default function Saved() {
               placeholder="Search"
               className="font-poppins text-sm px-3 py-2 bg-gray rounded-md flex-1"
             />
-
             <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
               <Ionicons name="filter" size={16} color="black" />
             </View>
@@ -51,7 +51,9 @@ export default function Saved() {
           <View className="bg-gray rounded-full mt-4 h-9 flex-row">
             <TouchableOpacity
               onPress={() => router.push("/saved?adsType=sell")}
-              className={`flex-1 h-full justify-center flex-row items-center ${adsType === "sell" && "bg-deep-gray"} rounded-full`}
+              className={`flex-1 h-full justify-center flex-row items-center ${
+                adsType === "sell" && "bg-deep-gray"
+              } rounded-full`}
             >
               <Text className="text-xs font-poppins text-center rounded-full">
                 Farmer Ads
@@ -59,7 +61,9 @@ export default function Saved() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              className={`flex-1 h-full justify-center flex-row items-center rounded-full ${adsType === "buy" && "bg-deep-gray"}`}
+              className={`flex-1 h-full justify-center flex-row items-center rounded-full ${
+                adsType === "buy" && "bg-deep-gray"
+              }`}
               onPress={() => router.push("/saved?adsType=buy")}
             >
               <Text className="text-xs font-poppins text-center rounded-full">
