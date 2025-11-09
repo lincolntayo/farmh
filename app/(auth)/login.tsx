@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,15 +20,22 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingToken, setCheckingToken] = useState(true); // ⬅️ NEW
 
   const passwordRef = useRef<TextInput>(null);
 
-  // ✅ Check if user is already logged in (runs once on mount)
   useEffect(() => {
     const checkLoggedIn = async () => {
-      const token = await AsyncStorage.getItem("token");
-      if (token) {
-        router.replace("/home");
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (token) {
+          // Optionally: validate token with backend here
+          router.replace("/home");
+        }
+      } catch (err) {
+        console.log("Token check error:", err);
+      } finally {
+        setCheckingToken(false); // ⬅️ Important
       }
     };
     checkLoggedIn();
@@ -44,13 +52,12 @@ export default function Login() {
       const response = await loginUser({ email, password });
       const { token, user } = response.data;
 
-      // Save JWT token
-      await AsyncStorage.setItem("token", token);
+      if (!token) throw new Error("No token received from server");
 
-      // Optionally save user info
+      await AsyncStorage.setItem("token", token);
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
-      Alert.alert("Success", `Welcome back, ${user.name}!`);
+      Alert.alert("Success", `Welcome back, ${user.name || "farmer"}!`);
       router.replace("/home");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -62,6 +69,15 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  // Show spinner while checking token to prevent flicker
+  if (checkingToken) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#00b894" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white px-4">

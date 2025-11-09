@@ -12,6 +12,7 @@ export default function UploadImageScreen() {
 
   const { formData } = useLocalSearchParams<{ formData?: string }>();
   const parsedData = formData ? JSON.parse(formData) : null;
+  
 
   const handleSubmit = async () => {
     if (!image) {
