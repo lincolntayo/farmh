@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -9,22 +9,43 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import ads from "../../db/ads.json";
+import API from "../../api/farmhubAPI";
 
 export default function MarketPlace() {
   const { adsType } = useLocalSearchParams();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!adsType) {
       router.replace("/marketplace?adsType=sell");
+    } else {
+      fetchProducts();
     }
   }, [adsType]);
 
-  if (!adsType) return null;
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get("/products");
+      const allProducts = res.data;
 
-  const filteredAds = ads.filter((ad) => ad.type === adsType);
+      // Filter by type (optional, if your backend includes product.type)
+      const filtered = allProducts.filter(
+        (product) => product.category === adsType // adjust field name if needed
+      );
+      setProducts(filtered);
+    } catch (err) {
+      console.error("Error fetching products:", err.response?.data || err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!adsType) return null;
 
   return (
     <View className="flex-1">
@@ -44,14 +65,15 @@ export default function MarketPlace() {
               placeholder="Search"
               className="font-poppins text-sm px-3 py-2 bg-gray rounded-md flex-1"
             />
-
             <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
               <Ionicons name="filter" size={16} color="black" />
             </View>
-
-            <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
+            <TouchableOpacity
+              className="bg-gray h-10 w-10 justify-center items-center rounded-md"
+              onPress={() => router.push("/addproduct")}
+            >
               <AntDesign name="plus" size={16} color="black" />
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View className="bg-gray rounded-full mt-4 h-9 flex-row">
@@ -78,15 +100,19 @@ export default function MarketPlace() {
             </TouchableOpacity>
           </View>
 
-          <View className="mt-5 flex-1 flex-col gap-y-6">
-            {filteredAds.map((adsData, index) => (
-              <AdCard
-                adsData={adsData}
-                key={index}
-                imageId={Math.floor(Math.random() * 5) + 1}
-              />
-            ))}
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color="#333" className="mt-5" />
+          ) : (
+            <View className="mt-5 flex-1 flex-col gap-y-6">
+              {products.map((item, index) => (
+                <AdCard
+                  adsData={item}
+                  key={index}
+                  imageId={Math.floor(Math.random() * 5) + 1}
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

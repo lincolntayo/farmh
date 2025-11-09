@@ -1,5 +1,5 @@
-import { Link, Redirect, router } from "expo-router";
-import { useRef, useState } from "react";
+import { Link, router } from "expo-router";
+import { useRef, useState, useEffect } from "react";
 import {
   Alert,
   Image,
@@ -12,41 +12,59 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import signedUser from "../../db/signedUser.json";
-import users from "../../db/users.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { loginUser } from "@/api/farmhubAPI";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const passwordRef = useRef<TextInput>(null);
 
-  if ("name" in signedUser[0]) {
-    return <Redirect href={"/home"} />;
-  }
+  // ✅ Check if user is already logged in (runs once on mount)
+  useEffect(() => {
+    const checkLoggedIn = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (token) {
+        router.replace("/home");
+      }
+    };
+    checkLoggedIn();
+  }, []);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!email || !password) {
       Alert.alert("Error", "All fields are required!");
       return;
     }
 
-    const existingUser = users.find((user) => user.email === email.trim());
+    try {
+      setLoading(true);
+      const response = await loginUser({ email, password });
+      const { token, user } = response.data;
 
-    if (!existingUser) {
-      Alert.alert("Error", "Email address doesn't exist, sign up");
-      return;
-    }
+      // Save JWT token
+      await AsyncStorage.setItem("token", token);
 
-    if (existingUser.password === password) {
-      signedUser.length = 0;
-      signedUser.push(existingUser);
-      router.push("/home");
+      // Optionally save user info
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+
+      Alert.alert("Success", `Welcome back, ${user.name}!`);
+      router.replace("/home");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert(
+        "Login Failed",
+        error.response?.data?.error || "Invalid email or password"
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white  px-4">
+    <SafeAreaView className="flex-1 bg-white px-4">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1 bg-white"
@@ -67,7 +85,7 @@ export default function Login() {
               </Text>
             </View>
 
-            <View className="">
+            <View>
               <TextInput
                 className="border border-gray-300 rounded-xl px-4 py-3 text-base mb-5"
                 placeholder="Enter email address"
@@ -97,11 +115,12 @@ export default function Login() {
 
             <View>
               <TouchableOpacity
-                className="bg-deep-green text-white  py-3 rounded-xl mb-2"
+                className="bg-deep-green py-3 rounded-xl mb-2"
                 onPress={handleSubmit}
+                disabled={loading}
               >
                 <Text className="font-poppins-medium text-white text-base text-center">
-                  Sign in
+                  {loading ? "Signing in..." : "Sign in"}
                 </Text>
               </TouchableOpacity>
 

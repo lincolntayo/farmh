@@ -3,7 +3,7 @@ import Info from "@/components/profile/Info";
 import InfoTab from "@/components/profile/InfoTab";
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -11,26 +11,77 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
-import savedAds from "../db/savedAds.json";
-import signedUser from "../db/signedUser.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import API from "../api/farmhubAPI";
 
-const profile = require("../assets/images/profile.png");
+const defaultProfile = require("../assets/images/profile.png");
 
 export default function Profile() {
-  const user = signedUser[0] as any;
-  const profileImage = user.photoID
+  const [user, setUser] = useState<any>(null);
+  const [savedProducts, setSavedProducts] = useState<any[]>([]);
+  const [savedFarmers, setSavedFarmers] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user info and profile data
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) {
+          router.replace("/login");
+          return;
+        }
+
+        // Get user info
+        const userRes = await API.get("/users/me");
+        setUser(userRes.data);
+
+        // Get saved items
+        const savedRes = await API.get("/saved");
+        setSavedProducts(savedRes.data.products || []);
+        setSavedFarmers(savedRes.data.farmers || []);
+
+        // Get orders
+        const ordersRes = await API.get("/orders");
+        setOrders(ordersRes.data || []);
+      } catch (error) {
+        console.error("Error fetching profile data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfileData();
+  }, []);
+
+  const handleSignOut = async () => {
+    await AsyncStorage.removeItem("token");
+    await AsyncStorage.removeItem("user");
+    router.replace("/login");
+  };
+
+  if (loading)
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="green" />
+      </View>
+    );
+
+  if (!user) return null; // fallback
+
+  const profileImage: ImageSourcePropType = user.photoID
     ? { uri: user.photoID }
-    : (profile as ImageSourcePropType);
+    : defaultProfile;
 
   return (
-    <View>
+    <View className="flex-1">
       <View className="h-12 bg-white" />
       <Header />
       <ScrollView
-        contentContainerStyle={{
-          flexGrow: 1,
-        }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="flex-1 px-4">
@@ -64,30 +115,26 @@ export default function Profile() {
           </View>
 
           <View className="bg-gray px-7 py-3 rounded-2xl mt-5 flex-row justify-between">
-            <Info figure={savedAds.length} text="Saved" />
-            <Info figure={6} text="Orders" />
+            <Info figure={savedProducts.length} text="Saved" />
+            <Info figure={orders.length} text="Orders" />
             <Info figure={0} text="Reviews" />
           </View>
 
           <View className="bg-gray py-3 rounded-2xl mt-5">
-            <InfoTab figure={6} text="My orders" border="border-b" />
+            <InfoTab figure={orders.length} text="My orders" border="border-b" />
             <InfoTab
-              figure={savedAds.length}
+              figure={savedFarmers.length}
               text="Saved farmers"
               border="border-b"
             />
-            <InfoTab figure={0} text="Saved products" border="border-b" />
+            <InfoTab figure={savedProducts.length} text="Saved products" border="border-b" />
             <InfoTab figure={0} text="Notifications" border="border-b" />
             <InfoTab text="Settings" />
           </View>
 
           <TouchableOpacity
             className="bg-gray mt-5 py-3 rounded-xl flex-row items-center justify-center gap-x-2"
-            onPress={() => {
-              signedUser.length = 0;
-              signedUser.push({});
-              router.push("/login");
-            }}
+            onPress={handleSignOut}
           >
             <Text className="text-base font-poppins">Sign Out</Text>
             <Ionicons name="exit-outline" size={24} color="black" />

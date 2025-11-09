@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -8,20 +8,43 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import savedAds from "../../db/savedAds.json";
+import { getSavedAds } from "../../api/farmhubAPI";
 
 export default function Saved() {
   const { adsType } = useLocalSearchParams();
+  const [savedAds, setSavedAds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!adsType) {
-      router.replace("/saved?adsType=sell"); //  use replace to avoid looping
+      router.replace("/saved?adsType=sell");
+      return;
     }
+
+    const fetchSavedAds = async () => {
+      try {
+        const res = await getSavedAds();
+        setSavedAds(res.data || []);
+      } catch (error) {
+        console.error("Error fetching saved ads:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSavedAds();
   }, [adsType]);
 
-  if (!adsType) return null; // Prevent rendering before redirect happens
+  if (!adsType) return null;
+  if (loading)
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="green" />
+      </View>
+    );
 
   const filteredAds = savedAds.filter((ad) => ad.type === adsType);
 

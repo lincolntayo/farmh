@@ -2,21 +2,39 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Redirect, Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import signedUser from "../../db/signedUser.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Layout() {
   const insets = useSafeAreaInsets();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
-  if (!("name" in signedUser[0])) {
-    return <Redirect href={"/login"} />;
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        setIsAuthenticated(!!token); // true if token exists
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // ✅ Wait until auth check completes
+  if (isAuthenticated === null) return null;
+
+  // ✅ If not authenticated → redirect to login
+  if (!isAuthenticated) {
+    return <Redirect href="/login" />;
   }
 
   return (
     <Tabs
       screenOptions={{
-        // headerShown: false,
         tabBarStyle: {
           borderRadius: 5,
           width: "90%",
