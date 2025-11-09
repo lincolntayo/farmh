@@ -18,7 +18,7 @@ API.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 
 // -------- USER AUTH ROUTES ----------
 export const registerUser = (data: Partial<User>) =>
-  API.post<User>("/users/register", data);
+  API.post<LoginResponse>("/users/register", data);
 
 export const loginUser = (data: Pick<User, "email" | "password">) =>
   API.post<LoginResponse>("/users/login", data);

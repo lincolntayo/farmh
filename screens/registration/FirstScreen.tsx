@@ -31,7 +31,7 @@ export default function FirstScreen() {
       return;
     }
     router.push({
-      pathname: "/register",
+      pathname: "/(auth)/register",
       params: { pageType: "form", accountType: selected },
     });
   };

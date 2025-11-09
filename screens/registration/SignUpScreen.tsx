@@ -1,6 +1,6 @@
 import Input from "@/components/registration/Input";
 import { Checkbox } from "expo-checkbox";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -12,9 +12,10 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function SignUpScreen({ route }: any) {
-  // Get accountType from route params if available
-  const accountType = route?.params?.accountType || "buyer";
+export default function SignUpScreen() {
+  const { accountType } = useLocalSearchParams<{ accountType?: string }>();
+  // Get accountType from params or default to buyer
+  const initialAccountType = accountType || "buyer";
   
   const [form, setForm] = useState({
     name: "",
@@ -26,7 +27,7 @@ export default function SignUpScreen({ route }: any) {
     country: "",
     state: "",
     address: "",
-    accountType: accountType,
+    accountType: initialAccountType,
   });
 
   const [isChecked, setChecked] = useState(false);
@@ -63,8 +64,11 @@ export default function SignUpScreen({ route }: any) {
 
     // Navigate to UploadImageScreen with form data
     router.push({
-      pathname: "/register/upload",
-      params: { formData: JSON.stringify(form) },
+      pathname: "/(auth)/register",
+      params: { 
+        pageType: "upload",
+        formData: JSON.stringify(form) 
+      },
     });
   };
 

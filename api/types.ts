@@ -20,6 +20,20 @@ export interface UserLoginRequest {
   password: string;
 }
 
+// User type for registration (includes all fields)
+export interface User {
+  name: string;
+  email: string;
+  password: string;
+  role?: "farmer" | "buyer" | "admin";
+  phoneNumber?: string;
+  farmName?: string;
+  country?: string;
+  state?: string;
+  address?: string;
+  photoID?: string;
+}
+
 export interface Product {
   _id?: string;
   name: string;

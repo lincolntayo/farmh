@@ -1,16 +1,45 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Redirect, Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import signedUser from "../../db/signedUser.json";
 
 export default function Layout() {
   const insets = useSafeAreaInsets();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  if (!("name" in signedUser[0])) {
-    return <Redirect href={"/login"} />;
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const user = await AsyncStorage.getItem("user");
+      if (token && user) {
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  if (checkingAuth) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#1a73e8" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/login" />;
   }
 
   return (
