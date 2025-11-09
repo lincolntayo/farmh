@@ -1,110 +1,123 @@
+// components/ads/AdCard.tsx
+import { Product } from "@/api/farmhubapi";
 import EvilIcons from "@expo/vector-icons/EvilIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-import savedAds from "../../db/savedAds.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useEffect, useState } from "react";
+import { Image, Text, TouchableOpacity, View, Alert } from "react-native";
+import { router } from "expo-router";
 
 interface AdCardProps {
-  productImage: string;
-  type: string;
-  productName: string;
-  category: string;
-  location: string;
-  quantity: number;
-  description: string;
-  priceFrom: number;
-  priceTo: number;
-  availableFrom: string;
-  availableUntil: string;
-  unit: string;
+  product: Product;
 }
 
-const images = {
-  1: require("../../assets/images/image-1.png"),
-  2: require("../../assets/images/image-2.png"),
-  3: require("../../assets/images/image-3.png"),
-  4: require("../../assets/images/image-4.png"),
-  5: require("../../assets/images/image-5.png"),
-};
+export default function AdCard({ product }: AdCardProps) {
+  const [saved, setSaved] = useState(false);
+  const placeholderImage = require("../../assets/images/image-1.png");
+  const productImage = product.image ? { uri: product.image } : placeholderImage;
 
-export default function AdCard({
-  adsData,
-  imageId,
-}: {
-  adsData: AdCardProps;
-  imageId: number;
-}) {
-  const [added, setAdded] = useState(false);
-  const randomImage = images[imageId as 1 | 2 | 3 | 4 | 5];
+  useEffect(() => {
+    checkIfSaved();
+  }, [product._id]);
 
-  const image = adsData.productImage
-    ? { uri: adsData.productImage }
-    : randomImage;
-
-  const addTofavorites = () => {
-    if (!added) {
-      savedAds.push(adsData);
-    } else {
-      const editedAds = savedAds.filter(
-        (ad) => JSON.stringify(ad) !== JSON.stringify(adsData)
-      );
-
-      savedAds.length = 0;
-      savedAds.push(...editedAds);
+  const checkIfSaved = async () => {
+    try {
+      const savedProducts = await AsyncStorage.getItem("savedProducts");
+      if (savedProducts) {
+        const parsed = JSON.parse(savedProducts);
+        setSaved(parsed.includes(product._id));
+      }
+    } catch (error) {
+      console.error("Error checking saved status:", error);
     }
+  };
 
-    setAdded((prev) => !prev);
+  const toggleSave = async () => {
+    try {
+      const savedProducts = await AsyncStorage.getItem("savedProducts");
+      let parsed = savedProducts ? JSON.parse(savedProducts) : [];
+
+      if (saved) {
+        // Remove from saved
+        parsed = parsed.filter((id: string) => id !== product._id);
+      } else {
+        // Add to saved
+        parsed.push(product._id);
+      }
+
+      await AsyncStorage.setItem("savedProducts", JSON.stringify(parsed));
+      setSaved(!saved);
+    } catch (error) {
+      console.error("Error toggling save:", error);
+      Alert.alert("Error", "Failed to save product");
+    }
+  };
+
+  const handlePress = () => {
+    router.push(`/product/${product._id}`);
   };
 
   return (
-    <View className="bg-gray p-1.5 pr-3 pb-3 rounded-md">
+    <TouchableOpacity 
+      className="bg-gray p-1.5 pr-3 pb-3 rounded-md"
+      onPress={handlePress}
+    >
       <View className="flex-row gap-x-2">
-        <Image source={image} className="w-28 h-28 rounded-md" />
+        <Image source={productImage} className="w-28 h-28 rounded-md" />
 
         <View className="flex-1">
           <View className="flex-row justify-between items-center">
-            <Text className="text-lg font-poppins-semibold">
-              {adsData.productName}
+            <Text className="text-lg font-poppins-semibold" numberOfLines={1}>
+              {product.name}
             </Text>
-            <Text className="text-xs font-poppins text-sky-blue">Organic</Text>
+            <View className="bg-light-green px-2 py-1 rounded">
+              <Text className="text-xs font-poppins text-deep-green">
+                {product.category}
+              </Text>
+            </View>
           </View>
 
-          <Text className="text-xs font-poppins  flex-shrink">
-            {adsData.description}
+          <Text className="text-xs font-poppins flex-shrink mt-1" numberOfLines={2}>
+            {product.description}
           </Text>
+
+          {product.farmer && (
+            <Text className="text-xs font-poppins text-gray-600 mt-1">
+              By: {product.farmer.name}
+            </Text>
+          )}
         </View>
       </View>
 
-      <View className="flex-row justify-between items-center">
-        <Text className="font-poppins-medium text-sm mt-1">
-          ₦{adsData.priceFrom} - ₦{adsData.priceTo}
+      <View className="flex-row justify-between items-center mt-2">
+        <Text className="font-poppins-medium text-sm">
+          ₦{product.price.toLocaleString()}
         </Text>
 
         <View className="flex-row gap-x-1 items-center">
           <EvilIcons name="location" size={16} color="black" />
-          <Text className="text-sm font-poppins-medium text-right mt-1">
-            {adsData.location}
+          <Text className="text-sm font-poppins-medium text-right">
+            {product.farmer?.state || "Nigeria"}
           </Text>
         </View>
       </View>
 
       <View className="flex-row justify-between items-center mt-2">
-        <Text className="font-poppins text-xs mt-1">
-          Up to{" "}
+        <Text className="font-poppins text-xs">
           <Text className="font-poppins-bold">
-            {adsData.quantity} {adsData.unit}
+            {product.quantity} kg
           </Text>{" "}
           available
         </Text>
 
-        <TouchableOpacity onPress={addTofavorites}>
+        <TouchableOpacity onPress={toggleSave}>
           <FontAwesome
-            name={added ? "heart" : "heart-o"}
+            name={saved ? "heart" : "heart-o"}
             size={16}
-            color="black"
+            color={saved ? "#0B4812" : "black"}
           />
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }

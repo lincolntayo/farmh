@@ -1,173 +1,146 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { Link, router } from "expo-router";
+import Feather from "@expo/vector-icons/Feather";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  Alert,
+  Animated,
   Image,
   ImageSourcePropType,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Alert,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Location from "expo-location";
 
 const defaultProfile = require("../assets/images/profile.png");
 
-// 🌤️ Weather API key from your .env
-const WEATHER_API_KEY = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
+// ✅ Base backend URL (update this if your backend domain changes)
+const BASE_URL = "https://farmhub-backend-26rg.onrender.com";
+
+interface User {
+  name?: string;
+  state?: string;
+  country?: string;
+  photoID?: string;
+  role?: string;
+}
 
 export default function Header() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User>({});
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [weather, setWeather] = useState<any>(null);
-  const [loadingWeather, setLoadingWeather] = useState(true);
-  const navBarRef = useRef<View>(null);
 
-  // ✅ Load user info and fetch weather
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    const init = async () => {
-      const storedUser = await AsyncStorage.getItem("user");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        await fetchWeather(parsedUser);
-      } else {
-        router.replace("/login");
-      }
-    };
-    init();
+    loadUser();
   }, []);
 
-  // ✅ Get weather by user location or device GPS
-  const fetchWeather = async (userData: any) => {
+  useEffect(() => {
+    if (open) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 300,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [open]);
+
+  const loadUser = async () => {
     try {
-      let locationName = userData?.state || userData?.city || userData?.country;
-
-      // 🌍 If no location saved, use GPS
-      if (!locationName) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert(
-            "Location Access Needed",
-            "We need location permission to show weather."
-          );
-          setLoadingWeather(false);
-          return;
-        }
-
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = currentLocation.coords;
-
-        // Reverse geocode to get the city name
-        const places = await Location.reverseGeocodeAsync({
-          latitude,
-          longitude,
-        });
-
-        if (places?.length > 0) {
-          const city = places[0].city || places[0].region || places[0].country;
-          locationName = city;
-        }
-      }
-
-      if (!locationName) {
-        console.warn("No valid location found for weather");
-        setLoadingWeather(false);
-        return;
-      }
-
-      // 🌦️ Fetch weather data from OpenWeather
-      const res = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${locationName}&appid=${WEATHER_API_KEY}&units=metric`
-      );
-
-      const data = await res.json();
-
-      if (data?.main) {
-        setWeather({
-          temp: Math.round(data.main.temp),
-          desc: data.weather[0].main,
-          icon: data.weather[0].icon,
-          city: data.name,
-        });
-      } else {
-        console.warn("Weather fetch failed:", data);
+      const userData = await AsyncStorage.getItem("user");
+      if (userData) {
+        setUser(JSON.parse(userData));
       }
     } catch (error) {
-      console.error("Error fetching weather:", error);
+      console.error("Error loading user:", error);
     } finally {
-      setLoadingWeather(false);
+      setLoading(false);
     }
   };
 
-  const handleLogout = async () => {
-    await AsyncStorage.removeItem("token");
-    await AsyncStorage.removeItem("user");
-    router.replace("/login");
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem("token");
+            await AsyncStorage.removeItem("user");
+            setOpen(false);
+            router.replace("/(auth)/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+          }
+        },
+      },
+    ]);
   };
 
-  if (!user) {
-    return (
-      <View className="flex-row justify-between items-center px-4 py-3 bg-white">
-        <ActivityIndicator size="small" color="green" />
-      </View>
-    );
-  }
-
-  const profileImage: ImageSourcePropType = user.photoID
-    ? { uri: user.photoID }
-    : defaultProfile;
+  // ✅ Correct image handling logic
+  const profileImage: ImageSourcePropType =
+    user?.photoID && typeof user.photoID === "string"
+      ? {
+          uri: user.photoID.startsWith("http")
+            ? user.photoID
+            : `${BASE_URL}${user.photoID}`,
+        }
+      : defaultProfile;
 
   return (
     <>
-      <View
-        className="bg-white flex-row justify-between items-center px-4 py-3"
-        ref={navBarRef}
-      >
-        {/* 🧍‍♂️ User Info */}
+      {/* Top Header */}
+      <View className="bg-white flex-row justify-between items-center px-4 py-3 mt-0">
         <View className="flex-row gap-x-4 items-center">
           <Image
             source={profileImage}
-            className="w-12 h-12 border rounded-full"
+            className="w-12 h-12 rounded-full border border-gray-300"
           />
           <View>
             <Text className="text-sm font-poppins">
               Hi, {user?.name ? user.name.split(" ")[0] : "User"}
             </Text>
-            <Text className="text-xs text-gray-600 font-poppins">
-              {user?.state || user?.city || user?.country || weather?.city || ""}
-            </Text>
+            {(user?.state || user?.country) && (
+              <View className="flex-row items-center gap-x-1">
+                <Ionicons name="location-outline" size={12} color="#666" />
+                <Text className="text-xs font-poppins text-gray-600">
+                  {user?.state || ""}
+                  {user?.state && user?.country ? ", " : ""}
+                  {user?.country || ""}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* 🌤️ Weather + Icons */}
-        <View className="flex-row items-center gap-x-4">
-          {loadingWeather ? (
-            <ActivityIndicator size="small" color="gray" />
-          ) : weather ? (
-            <View className="flex-row items-center gap-x-1">
-              <Image
-                source={{
-                  uri: `https://openweathermap.org/img/wn/${weather.icon}@2x.png`,
-                }}
-                style={{ width: 25, height: 25 }}
-              />
-              <View>
-                <Text className="text-sm font-poppins">{weather.temp}°C</Text>
-                <Text className="text-xs text-gray-600 font-poppins">
-                  {weather.desc}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <Text className="text-xs text-gray-400 font-poppins">
-              Weather N/A
-            </Text>
-          )}
-
-          {/* Notification + Menu */}
+        {/* Icons */}
+        <View className="flex-row gap-x-6">
           <TouchableOpacity>
             <AntDesign name="bell" size={20} color="black" />
           </TouchableOpacity>
@@ -178,26 +151,139 @@ export default function Header() {
         </View>
       </View>
 
-      {/* Dropdown Menu */}
+      {/* Backdrop */}
       {open && (
-        <View className="bg-white shadow-lg">
-          <Link href={"/profile"} className="px-4 py-3 border-b border-gray-200">
-            <Text className="text-gray-800 font-poppins-medium text-lg text-right">
+        <Animated.View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            opacity: backdropOpacity,
+            zIndex: 999,
+          }}
+          pointerEvents={open ? "auto" : "none"}
+        >
+          <TouchableOpacity
+            style={{ flex: 1 }}
+            activeOpacity={1}
+            onPress={() => setOpen(false)}
+          />
+        </Animated.View>
+      )}
+
+      {/* Side Menu */}
+      <Animated.View
+        style={{
+          transform: [{ translateX: slideAnim }],
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: "75%",
+          maxWidth: 300,
+          height: "100%",
+          backgroundColor: "white",
+          zIndex: 1000,
+          shadowColor: "#000",
+          shadowOffset: { width: -2, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 3.84,
+          elevation: 5,
+        }}
+        pointerEvents={open ? "auto" : "none"}
+      >
+        {/* Menu Header */}
+        <View className="px-4 py-6 bg-light-green border-b border-gray-300">
+          <View className="flex-row items-center gap-x-3">
+            <Image
+              source={profileImage}
+              className="w-16 h-16 border-2 border-deep-green rounded-full"
+            />
+            <View className="flex-1">
+              <Text className="font-poppins-medium text-lg" numberOfLines={1}>
+                {user?.name || "User"}
+              </Text>
+              <Text className="text-xs font-poppins text-gray-600">
+                {user?.role === "farmer" ? "Farmer" : "Buyer"}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Menu Items */}
+        <View className="flex-1">
+          <TouchableOpacity
+            className="px-4 py-4 border-b border-gray-200 flex-row items-center gap-x-3"
+            onPress={() => {
+              setOpen(false);
+              router.push("/profile");
+            }}
+          >
+            <Feather name="user" size={20} color="#0B4812" />
+            <Text className="text-gray-800 font-poppins-medium text-base">
               Profile
             </Text>
-          </Link>
-          <Link href={"/settings"} className="px-4 py-3 border-b border-gray-200">
-            <Text className="text-gray-800 font-poppins-medium text-lg text-right">
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="px-4 py-4 border-b border-gray-200 flex-row items-center gap-x-3"
+            onPress={() => {
+              setOpen(false);
+              router.push("/settings");
+            }}
+          >
+            <Feather name="settings" size={20} color="#0B4812" />
+            <Text className="text-gray-800 font-poppins-medium text-base">
               Settings
             </Text>
-          </Link>
-          <TouchableOpacity className="px-4 py-3" onPress={handleLogout}>
-            <Text className="text-red-500 font-poppins-medium text-lg text-right">
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="px-4 py-4 border-b border-gray-200 flex-row items-center gap-x-3"
+            onPress={() => setOpen(false)}
+          >
+            <Feather name="info" size={20} color="#0B4812" />
+            <Text className="text-gray-800 font-poppins-medium text-base">
+              About Us
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="px-4 py-4 border-b border-gray-200 flex-row items-center gap-x-3"
+            onPress={() => setOpen(false)}
+          >
+            <Feather name="help-circle" size={20} color="#0B4812" />
+            <Text className="text-gray-800 font-poppins-medium text-base">
+              Support
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom Actions */}
+        <View className="border-t border-gray-300">
+          <TouchableOpacity
+            className="px-4 py-4 flex-row items-center gap-x-3"
+            onPress={() => setOpen(false)}
+          >
+            <MaterialIcons name="switch-account" size={20} color="#1A73E8" />
+            <Text className="text-sky-blue font-poppins-medium text-base">
+              Switch Account
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="px-4 py-4 flex-row items-center gap-x-3"
+            onPress={handleLogout}
+          >
+            <Ionicons name="exit-outline" size={20} color="#dc2626" />
+            <Text className="text-red-600 font-poppins-medium text-base">
               Logout
             </Text>
           </TouchableOpacity>
         </View>
-      )}
+      </Animated.View>
     </>
   );
 }

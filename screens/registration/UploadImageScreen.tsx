@@ -1,160 +1,156 @@
+// screens/registration/UploadImageScreen.tsx
 import ImageUpload from "@/components/registration/ImageUpload";
+import { loginUser, registerUser } from "@/api/farmhubapi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getCurrentUser, loginUser, registerUser } from "../../api/farmhubAPI";
-import { getUserFromToken } from "../../api/utils";
 
 export default function UploadImageScreen() {
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
   const { formData } = useLocalSearchParams<{ formData?: string }>();
   const parsedData = formData ? JSON.parse(formData) : null;
-  
 
-  const handleSubmit = async () => {
-    if (!image) {
-      Alert.alert("Error", "Please upload an image");
+  const handleSkip = async () => {
+    Alert.alert(
+      "Skip Photo Upload",
+      "You can add a profile photo later from settings. Continue without photo?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Continue", onPress: () => handleSubmit(true) }
+      ]
+    );
+  };
+
+  const handleSubmit = async (skipImage = false) => {
+    if (!skipImage && !image) {
+      Alert.alert("Error", "Please upload a profile image or skip");
       return;
     }
+
     if (!parsedData) {
       Alert.alert("Error", "Missing user data, please restart registration");
-      router.push("/register");
+      router.push("/(auth)/register?pageType=accountType");
       return;
     }
 
     setLoading(true);
     try {
-      // Remove confirmPassword and map accountType to role
       const { confirmPassword, accountType, ...userData } = parsedData;
-      const role = accountType === "seller" ? "farmer" : accountType === "both" ? "farmer" : "buyer";
       
-      // Backend User schema: name, email, password, role (required)
-      // Other fields might be optional or need to be sent separately
-      const finalData = {
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        role: role as "farmer" | "buyer" | "admin",
-        // Include optional fields if backend accepts them
-        phoneNumber: userData.phoneNumber,
-        farmName: userData.farmName,
-        country: userData.country,
-        state: userData.state,
-        address: userData.address,
-        photoID: image,
+      // Map accountType to role
+      let role: "farmer" | "buyer" = "buyer";
+      if (accountType === "seller" || accountType === "both") {
+        role = "farmer";
+      }
+      
+      const registrationData = {
+        ...userData,
+        role,
+        email: userData.email.trim().toLowerCase(),
+        photoID: image || undefined,
       };
-
-      const res = await registerUser(finalData);
+      
+      console.log("Registering user with data:", { ...registrationData, password: "***" });
+      
+      const res = await registerUser(registrationData);
 
       if (res.status === 201 || res.status === 200) {
-        // Backend returns: { "message": "...", "token": "..." } or { "token": "..." }
-        const responseData: any = res.data;
-        let token: string | undefined = responseData.token;
-
-        // If no token, try to login
+        const { token, user } = res.data;
+        
         if (!token) {
-          try {
-            const loginResponse = await loginUser({
-              email: finalData.email,
-              password: finalData.password,
-            });
-            if (loginResponse.status === 200 || loginResponse.status === 201) {
-              token = loginResponse.data.token;
-            }
-          } catch (loginError) {
-            console.error("Auto-login failed:", loginError);
+          // If no token, try to login
+          console.log("No token received, attempting auto-login...");
+          const loginResponse = await loginUser({
+            email: registrationData.email,
+            password: userData.password,
+          });
+          
+          if (loginResponse.status === 200 || loginResponse.status === 201) {
+            const loginData = loginResponse.data;
+            await AsyncStorage.setItem("token", loginData.token);
+            await AsyncStorage.setItem("user", JSON.stringify(loginData.user));
+            
+            Alert.alert("Success", `Welcome to FarmHub, ${loginData.user.name}!`, [
+              {
+                text: "OK",
+                onPress: () => router.replace("/(tabs)/home"),
+              },
+            ]);
+            return;
           }
         }
 
-        if (!token) {
-          throw new Error("No token received from server");
-        }
-
-        // Save token
+        // Save token and user info
         await AsyncStorage.setItem("token", token);
-
-        // Try to get user data
-        let user: any = null;
-        try {
-          user = await getCurrentUser();
-        } catch (fetchError) {
-          // If fetch fails, decode token to get basic info
-          const tokenUser = getUserFromToken(token);
-          user = {
-            _id: tokenUser.id || "",
-            email: tokenUser.email || finalData.email,
-            name: finalData.name || "",
-            role: finalData.role || "buyer",
-            phoneNumber: finalData.phoneNumber,
-            farmName: finalData.farmName,
-            country: finalData.country,
-            state: finalData.state,
-            address: finalData.address,
-            photoID: finalData.photoID,
-          };
-        }
-
-        // If still no user, create from form data
-        if (!user) {
-          user = {
-            _id: "",
-            email: finalData.email,
-            name: finalData.name || "",
-            role: finalData.role || "buyer",
-            phoneNumber: finalData.phoneNumber,
-            farmName: finalData.farmName,
-            country: finalData.country,
-            state: finalData.state,
-            address: finalData.address,
-            photoID: finalData.photoID,
-          };
-        }
-
         await AsyncStorage.setItem("user", JSON.stringify(user));
 
-        Alert.alert("Success", `Welcome ${user.name || "to FarmHub"}!`, [
+        Alert.alert("Success", `Welcome to FarmHub, ${user.name}!`, [
           {
             text: "OK",
             onPress: () => router.replace("/(tabs)/home"),
           },
         ]);
-      } else {
-        Alert.alert("Error", "Something went wrong. Try again.");
       }
     } catch (error: any) {
-      console.error("Registration error:", error);
+      console.error("Registration error:", error.response?.data || error.message);
       
-      // Handle error format: { "error": "..." }
-      const errorMessage = 
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Something went wrong. Please try again.";
+      const errorMessage = error?.response?.data?.message 
+        || error?.response?.data?.error 
+        || error?.message 
+        || "Registration failed. Please try again.";
       
-      // Check if error indicates user already exists
       const errorLower = errorMessage.toLowerCase();
       const isUserExists = errorLower.includes("already exists") 
         || errorLower.includes("email already")
-        || error?.response?.status === 409
-        || (error?.response?.status === 400 && errorLower.includes("email"));
+        || error?.response?.status === 409;
       
       if (isUserExists && parsedData) {
         Alert.alert(
           "Account Already Exists",
-          "An account with this email already exists. Please sign in instead.",
+          "An account with this email already exists. Would you like to sign in instead?",
           [
+            { text: "Cancel", style: "cancel" },
             {
-              text: "OK",
-              onPress: () => router.replace("/(auth)/login"),
+              text: "Sign In",
+              onPress: async () => {
+                try {
+                  setLoading(true);
+                  const loginResponse = await loginUser({
+                    email: parsedData.email.trim().toLowerCase(),
+                    password: parsedData.password,
+                  });
+
+                  if (loginResponse.status === 200 || loginResponse.status === 201) {
+                    const { token, user } = loginResponse.data;
+                    
+                    await AsyncStorage.setItem("token", token);
+                    await AsyncStorage.setItem("user", JSON.stringify(user));
+                    
+                    Alert.alert("Success", `Welcome back, ${user.name}!`, [
+                      {
+                        text: "OK",
+                        onPress: () => router.replace("/(tabs)/home"),
+                      },
+                    ]);
+                  }
+                } catch (loginError: any) {
+                  Alert.alert(
+                    "Login Failed", 
+                    loginError?.response?.data?.message || "Please try again from the login screen"
+                  );
+                  router.replace("/(auth)/login");
+                } finally {
+                  setLoading(false);
+                }
+              },
             },
           ]
         );
       } else {
-        Alert.alert("Signup Failed", errorMessage);
+        Alert.alert("Registration Failed", errorMessage);
       }
     } finally {
       setLoading(false);
@@ -162,18 +158,50 @@ export default function UploadImageScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white justify-end px-4 gap-y-12" edges={["top","bottom"]}>
-      <View className="items-center">
-        <Image source={require("../../assets/images/splash-icon.png")} className="w-44 h-44" resizeMode="contain" />
-        <Text className="text-deep-green font-poppins-semibold text-3xl mt-2">FarmHub</Text>
-        <Text className="text-lg text-center mt-2 font-poppins-medium">Upload an image for your account</Text>
+    <SafeAreaView className="flex-1 bg-white justify-between px-4 py-8" edges={["top","bottom"]}>
+      <View className="items-center mt-8">
+        <Image 
+          source={require("../../assets/images/splash-icon.png")} 
+          className="w-32 h-32" 
+          resizeMode="contain" 
+        />
+        <Text className="text-deep-green font-poppins-semibold text-2xl mt-2">
+          FarmHub
+        </Text>
+        <Text className="text-base text-center mt-2 font-poppins-medium px-4">
+          Upload a profile photo for your account
+        </Text>
       </View>
 
-      <ImageUpload image={image} setImage={setImage} />
+      <View className="flex-1 justify-center">
+        <ImageUpload image={image} setImage={setImage} />
+      </View>
 
-      <TouchableOpacity className="bg-deep-green py-3 rounded-xl" onPress={handleSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text className="text-white font-poppins-medium text-base text-center">Sign up</Text>}
-      </TouchableOpacity>
+      <View className="gap-y-3">
+        <TouchableOpacity 
+          className="bg-deep-green py-3 rounded-xl" 
+          onPress={() => handleSubmit(false)} 
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text className="text-white font-poppins-medium text-base text-center">
+              Complete Registration
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="py-3 rounded-xl border border-gray-300" 
+          onPress={handleSkip}
+          disabled={loading}
+        >
+          <Text className="text-gray-600 font-poppins-medium text-base text-center">
+            Skip for now
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }

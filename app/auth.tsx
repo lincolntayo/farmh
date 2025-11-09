@@ -1,10 +1,11 @@
+// app/auth.tsx
 import { Link } from "expo-router";
 import { Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Auth() {
   return (
-    <SafeAreaView className="flex-1 bg-white justify-between pb-32 px-4">
+    <SafeAreaView className="flex-1 bg-white justify-between pb-32 px-4" edges={["top", "bottom"]}>
       <View className="items-center mt-60">
         <Image
           source={require("../assets/images/splash-icon.png")}
@@ -18,14 +19,14 @@ export default function Auth() {
 
       <View>
         <Link
-          href={"/login"}
+          href={"/(auth)/login"}
           className="bg-gray text-base font-poppins-medium text-center py-3 rounded-xl"
         >
           Sign in
         </Link>
 
         <Link
-          href={"/register?pageType=accountType"}
+          href={"/(auth)/register?pageType=accountType"}
           className="bg-deep-green text-white mt-10 text-base font-poppins-medium text-center py-3 rounded-xl"
         >
           Sign up

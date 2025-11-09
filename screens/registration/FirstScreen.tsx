@@ -1,3 +1,4 @@
+// screens/registration/FirstScreen.tsx
 import RadioButton from "@/components/RadioButton";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -30,8 +31,6 @@ export default function FirstScreen() {
       Alert.alert("Error", "Please select an account type!");
       return;
     }
-
-    // ✅ Navigate to SignUpScreen with accountType as a route param
     router.push({
       pathname: "/(auth)/register",
       params: { pageType: "form", accountType: selected },
@@ -39,7 +38,10 @@ export default function FirstScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white justify-end pb-32 px-4 gap-y-12">
+    <SafeAreaView 
+      className="flex-1 bg-white justify-end pb-32 px-4 gap-y-12"
+      edges={["top", "bottom"]}
+    >
       <View className="items-center">
         <Image
           source={require("../../assets/images/splash-icon.png")}
@@ -53,11 +55,10 @@ export default function FirstScreen() {
           Tell us how you would like to use FarmHub
         </Text>
       </View>
-
       <View className="flex">
-        {options.map((option, index) => (
+        {options.map((option) => (
           <RadioButton
-            key={index}
+            key={option.value}
             description={option.description}
             label={option.label}
             selected={selected}
@@ -66,7 +67,6 @@ export default function FirstScreen() {
           />
         ))}
       </View>
-
       <TouchableOpacity
         className="bg-deep-green text-white py-3 rounded-xl"
         onPress={handleSubmit}
