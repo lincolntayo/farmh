@@ -6,7 +6,7 @@ import { useLocalSearchParams } from "expo-router";
 type PageType = "accountType" | "form" | "upload";
 
 export default function Register() {
-  const { pageType }: { pageType: PageType } = useLocalSearchParams();
+  const { pageType } = useLocalSearchParams<{ pageType?: PageType }>();
 
   switch (pageType) {
     case "accountType":
@@ -16,6 +16,7 @@ export default function Register() {
     case "upload":
       return <UploadImageScreen />;
     default:
-      return <></>;
+      // Default to FirstScreen if no pageType is provided
+      return <FirstScreen />;
   }
 }

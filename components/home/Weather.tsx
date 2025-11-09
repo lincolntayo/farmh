@@ -65,13 +65,11 @@ export default function Weather() {
   };
 
   return (
-    <View className="items-center p-4 bg-gray rounded-xl flex-row gap-x-6">
-      <View className="">{getWeatherIcon()}</View>
-
-      <View className="ml-6">
+    <View className="p-4 bg-gray rounded-xl flex-row items-center justify-between">
+      <View>{getWeatherIcon()}</View>
+      <View className="items-end">
         <Text className="text-3xl font-poppins-medium">{temp}°C</Text>
-        {/* <Text className="text-2xl font-semibold">{city}</Text> */}
-        <Text className="text-base font-poppins text-gray-500 mt-1">
+        <Text className="text-base font-poppins text-black mt-1">
           {condition}
         </Text>
       </View>

@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { getSavedAds } from "../../api/farmhubAPI";
+import { getSavedAds, getCurrentUser } from "../../api/farmhubAPI";
 
 export default function Saved() {
   const { adsType } = useLocalSearchParams();
@@ -26,8 +26,11 @@ export default function Saved() {
 
     const fetchSavedAds = async () => {
       try {
-        const res = await getSavedAds();
-        setSavedAds(res.data || []);
+        const user = await getCurrentUser();
+        if (!user?._id) throw new Error("User not found");
+
+        const res = await getSavedAds(user._id);
+        setSavedAds(res || []);
       } catch (error) {
         console.error("Error fetching saved ads:", error);
       } finally {

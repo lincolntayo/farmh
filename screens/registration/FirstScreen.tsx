@@ -33,7 +33,7 @@ export default function FirstScreen() {
 
     // ✅ Navigate to SignUpScreen with accountType as a route param
     router.push({
-      pathname: "/register",
+      pathname: "/(auth)/register",
       params: { pageType: "form", accountType: selected },
     });
   };

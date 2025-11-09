@@ -55,46 +55,50 @@ export default function MarketPlace() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 py-3">
-          <Text className="text-xl font-poppins-medium mb-3">Market place</Text>
-          <Text className="text-xs font-poppins mb-3">
+          <Text className="text-xl font-poppins-medium mb-1">Market place</Text>
+          <Text className="text-xs font-poppins text-gray-500 mb-4">
             Discover farmers & quality products
           </Text>
 
-          <View className="flex-row gap-x-4">
+          <View className="flex-row gap-x-2 mb-4">
             <TextInput
               placeholder="Search"
               className="font-poppins text-sm px-3 py-2 bg-gray rounded-md flex-1"
             />
-            <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
+            <TouchableOpacity className="bg-gray h-10 w-10 justify-center items-center rounded-md">
               <Ionicons name="filter" size={16} color="black" />
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               className="bg-gray h-10 w-10 justify-center items-center rounded-md"
-              onPress={() => router.push("/addproduct")}
+              onPress={() => router.push("/(tabs)/create")}
             >
               <AntDesign name="plus" size={16} color="black" />
             </TouchableOpacity>
           </View>
 
-          <View className="bg-gray rounded-full mt-4 h-9 flex-row">
+          <View className="bg-gray rounded-full h-9 flex-row">
             <TouchableOpacity
               onPress={() => router.push("/marketplace?adsType=sell")}
-              className={`flex-1 h-full justify-center flex-row items-center ${
-                adsType === "sell" && "bg-deep-gray"
-              } rounded-full`}
+              className={`flex-1 h-full justify-center items-center rounded-full ${
+                adsType === "sell" ? "bg-black" : ""
+              }`}
             >
-              <Text className="text-xs font-poppins text-center rounded-full">
+              <Text className={`text-xs font-poppins ${
+                adsType === "sell" ? "text-white" : "text-black"
+              }`}>
                 Farmer Ads
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              className={`flex-1 h-full justify-center flex-row items-center rounded-full ${
-                adsType === "buy" && "bg-deep-gray"
+              className={`flex-1 h-full justify-center items-center rounded-full ${
+                adsType === "buy" ? "bg-black" : ""
               }`}
               onPress={() => router.push("/marketplace?adsType=buy")}
             >
-              <Text className="text-xs font-poppins text-center rounded-full">
+              <Text className={`text-xs font-poppins ${
+                adsType === "buy" ? "text-white" : "text-black"
+              }`}>
                 Buyer Ads
               </Text>
             </TouchableOpacity>

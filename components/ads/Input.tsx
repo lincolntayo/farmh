@@ -11,7 +11,7 @@ interface InputProps {
   secureTextEntry?: boolean;
   ref?: React.Ref<TextInput>;
   name: string;
-  keyboardType?: "email-address" | "phone-pad";
+  keyboardType?: "email-address" | "phone-pad" | "numeric" | "default";
   numberOfLines?: number;
   multiline?: boolean;
 }

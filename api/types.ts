@@ -29,3 +29,16 @@ export interface LoginResponse {
   token: string;
   user: User;
 }
+
+export interface UserResponse {
+  _id: string;
+  name: string;
+  email: string;
+  role: "farmer" | "buyer" | "admin";
+  phoneNumber?: string;
+  farmName?: string;
+  country?: string;
+  state?: string;
+  address?: string;
+  photoID?: string;
+}

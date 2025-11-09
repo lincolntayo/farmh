@@ -29,28 +29,35 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ image, setImage }) => {
   };
 
   return (
-    <View className="flex-row justify-between flex-1 mt-4">
-      <View className="w-[45%]">
-        <Text className="text-base font-poppins-medium mt-1">
-          Product Image
-        </Text>
-        <Text className="text-xs font-poppins">
-          Add an image to be used as your product cover photo
-        </Text>
-      </View>
+    <View className="mt-4">
+      <Text className="text-base font-poppins-medium mb-1">
+        Product Image
+      </Text>
+      <Text className="text-xs font-poppins text-gray-500 mb-3">
+        Add up to 5 images. First image will be the cover photo.
+      </Text>
 
       {image ? (
-        <Image
-          source={{ uri: image }}
-          className="w-44 h-44 rounded-full mb-4 border-2 border-gray"
-        />
+        <View className="relative">
+          <Image
+            source={{ uri: image }}
+            className="w-full h-64 rounded-md mb-4"
+            resizeMode="cover"
+          />
+          <TouchableOpacity
+            onPress={pickImage}
+            className="absolute top-2 right-2 bg-black/50 rounded-full p-2"
+          >
+            <Feather name="edit-2" size={16} color="white" />
+          </TouchableOpacity>
+        </View>
       ) : (
         <TouchableOpacity
           onPress={pickImage}
-          className="w-44 h-44 bg-gray mb-4 items-center justify-center rounded-md"
+          className="w-full h-64 border-2 border-dashed border-gray-300 rounded-md items-center justify-center bg-gray/30"
         >
-          <View className="border border-dashed rounded-md w-32 h-32 gap-y-1 justify-center items-center">
-            <Feather name="upload" size={24} color="#979595" />
+          <View className="items-center gap-y-2">
+            <Feather name="upload" size={32} color="#979595" />
             <Text className="font-poppins text-base text-gray-600">Upload</Text>
           </View>
         </TouchableOpacity>

@@ -61,8 +61,11 @@ export default function SignUpScreen({ route }: any) {
 
     // ✅ Navigate to UploadImageScreen with form data
     router.push({
-      pathname: "/register/upload",
-      params: { formData: JSON.stringify(form) },
+      pathname: "/(auth)/register",
+      params: { 
+        pageType: "upload",
+        formData: JSON.stringify(form) 
+      },
     });
   };
 

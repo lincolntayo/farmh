@@ -29,19 +29,19 @@ export default function Form(props: FormProps) {
   };
 
   return (
-    <View className="mt-5">
+    <View className="mt-2">
       <Input
         label="Product Name *"
         name="productName"
         onChangeText={onChangeText}
         onSubmitEditing={() => {}}
-        placeholder="e.g Watermelons"
+        placeholder="e.g. Watermelons"
         returnKeyType="next"
         value={form.productName}
       />
 
       <View className="mb-3">
-        <Text className="text-base font-poppins-medium">Category *</Text>
+        <Text className="text-base font-poppins-medium mb-2">Category *</Text>
         <CustomDropdown
           data={categoryType}
           placeholder="Select Category"
@@ -74,8 +74,8 @@ export default function Form(props: FormProps) {
           onSubmitEditing={() => {}}
           placeholder="100"
           returnKeyType="next"
-          value={form.quantity.toLocaleString()}
-          keyboardType="phone-pad"
+          value={form.quantity}
+          keyboardType="numeric"
         />
 
         <Input
@@ -83,7 +83,7 @@ export default function Form(props: FormProps) {
           name="unit"
           onChangeText={onChangeText}
           onSubmitEditing={() => {}}
-          placeholder=""
+          placeholder="kg"
           returnKeyType="next"
           value={form.unit}
         />
@@ -91,25 +91,25 @@ export default function Form(props: FormProps) {
 
       <View className="flex-row gap-x-2">
         <Input
-          label="Price Range From *"
+          label="From (₦)"
           name="priceFrom"
           onChangeText={onChangeText}
           onSubmitEditing={() => {}}
-          placeholder="Price in ₦"
+          placeholder="0"
           returnKeyType="next"
-          value={form.priceFrom.toLocaleString()}
-          keyboardType="phone-pad"
+          value={form.priceFrom}
+          keyboardType="numeric"
         />
 
         <Input
-          label="Price Range To *"
+          label="To (₦)"
           name="priceTo"
           onChangeText={onChangeText}
           onSubmitEditing={() => {}}
-          placeholder="Price in ₦"
+          placeholder="0"
           returnKeyType="next"
-          value={form.priceTo.toLocaleString()}
-          keyboardType="phone-pad"
+          value={form.priceTo}
+          keyboardType="numeric"
         />
       </View>
 

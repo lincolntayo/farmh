@@ -91,35 +91,35 @@ export default function Create() {
         showsVerticalScrollIndicator={false}
       >
         <View className="px-4 py-3">
-          <Text className="text-xl font-poppins-medium mb-3">
+          <Text className="text-xl font-poppins-medium mb-1">
             Create New Ad
           </Text>
-          <Text className="text-xs font-poppins mb-3">
+          <Text className="text-xs font-poppins text-gray-500 mb-4">
             List your product or buying request
           </Text>
 
           {/* Ad type dropdown */}
-          <View className="flex-row items-center gap-x-3 mt-2">
+          <View className="flex-row items-center gap-x-3 mb-4">
             <Text className="text-base font-poppins">I want to: </Text>
             <CustomDropdown
               data={adsType}
               style={{
-                width: 100,
-                borderRadius: 5,
+                width: 120,
+                borderRadius: 8,
                 backgroundColor: "#d9d9d9",
-                paddingHorizontal: 6,
-                paddingVertical: 4,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
               }}
               value={type}
               setValue={setType}
-              placeholder="Select"
+              placeholder="Sell"
             />
           </View>
 
           {/* Image Upload */}
           <ImageUpload image={image} setImage={setImage} />
 
-          <Text className="font-poppins text-base mt-3">Product Details</Text>
+          <Text className="text-base font-poppins-medium mt-4 mb-3">Product Details</Text>
 
           {/* Product Form */}
           <Form

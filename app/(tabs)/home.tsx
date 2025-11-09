@@ -32,7 +32,7 @@ export default function Home() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="px-4 py-3 flex-1 flex-col gap-y-8">
+        <View className="px-4 py-3 flex-1 flex-col gap-y-6">
           <Weather />
 
           <View className="flex-col gap-y-3">
@@ -48,7 +48,7 @@ export default function Home() {
               </Link>
             </View>
 
-            <View className="flex-row gap-x-6 justify-between">
+            <View className="flex-row gap-x-4 justify-between">
               {marketPlaceImages.map((image, index) => (
                 <SectionCard image={image} key={index} />
               ))}
@@ -66,7 +66,7 @@ export default function Home() {
               </Link>
             </View>
 
-            <View className="flex-row gap-x-6 justify-between">
+            <View className="flex-row gap-x-4 justify-between">
               {farmersImages.map((image, index) => (
                 <SectionCard image={image} key={index} />
               ))}
@@ -76,7 +76,7 @@ export default function Home() {
           <View className="flex-col gap-y-3 flex-1">
             <Text className="text-base font-poppins-medium">Trending News</Text>
 
-            <View className="flex-col flex-1 gap-y-6">
+            <View className="flex-col flex-1 gap-y-4">
               {newsImages.map((image, index) => (
                 <News image={image} key={index} />
               ))}

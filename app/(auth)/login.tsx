@@ -1,6 +1,10 @@
+import { getCurrentUser, loginUser } from "@/api/farmhubAPI";
+import { getUserFromToken } from "@/api/utils";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Link, router } from "expo-router";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -10,11 +14,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loginUser } from "@/api/farmhubAPI";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -28,9 +29,9 @@ export default function Login() {
     const checkLoggedIn = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
-        if (token) {
-          // Optionally: validate token with backend here
-          router.replace("/home");
+        const user = await AsyncStorage.getItem("user");
+        if (token && user) {
+          router.replace("/(tabs)/home");
         }
       } catch (err) {
         console.log("Token check error:", err);
@@ -47,24 +48,66 @@ export default function Login() {
       return;
     }
 
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await loginUser({ email, password });
-      const { token, user } = response.data;
+      const response = await loginUser({ email: email.trim(), password });
+      
+      // Backend returns: { "message": "Login successful", "token": "..." }
+      const responseData: any = response.data;
+      const token = responseData.token;
 
-      if (!token) throw new Error("No token received from server");
+      if (!token) {
+        throw new Error("No token received from server");
+      }
 
+      // Save token
       await AsyncStorage.setItem("token", token);
+
+      // Try to get user data from token or fetch from API
+      let user: any = null;
+      try {
+        // Try to fetch current user
+        user = await getCurrentUser();
+      } catch (fetchError) {
+        // If fetch fails, decode token to get basic info
+        const tokenUser = getUserFromToken(token);
+        user = {
+          _id: tokenUser.id || "",
+          email: tokenUser.email || email.trim(),
+          name: "",
+          role: "buyer" as const,
+        };
+      }
+
+      // If still no user, create minimal user object
+      if (!user) {
+        user = {
+          _id: "",
+          email: email.trim(),
+          name: "",
+          role: "buyer" as const,
+        };
+      }
+
       await AsyncStorage.setItem("user", JSON.stringify(user));
 
-      Alert.alert("Success", `Welcome back, ${user.name || "farmer"}!`);
-      router.replace("/home");
+      Alert.alert("Success", `Welcome back, ${user.name || email.trim()}!`, [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)/home"),
+        },
+      ]);
     } catch (error: any) {
       console.error("Login error:", error);
-      Alert.alert(
-        "Login Failed",
-        error.response?.data?.error || "Invalid email or password"
-      );
+      
+      // Handle error format: { "error": "..." }
+      const errorMessage = 
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Invalid email or password. Please try again.";
+      
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -143,7 +186,7 @@ export default function Login() {
               <View className="flex-row justify-center">
                 <Text className="text-base font-poppins">No account yet? </Text>
                 <Link
-                  href={"/register?pageType=accountType"}
+                  href={"/(auth)/register?pageType=accountType"}
                   className="text-base font-poppins text-sky-blue"
                 >
                   Sign up
