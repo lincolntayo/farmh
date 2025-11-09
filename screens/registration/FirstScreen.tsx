@@ -3,7 +3,6 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import pendingUser from "../../db/pendingUsers.json";
 
 const options = [
   {
@@ -19,22 +18,22 @@ const options = [
   {
     label: "Both",
     value: "both",
+    description: "To buy and sell farm produce",
   },
 ];
 
 export default function FirstScreen() {
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState<string>("");
 
   const handleSubmit = () => {
     if (selected === "") {
-      Alert.alert("Error", "Select an account type!");
+      Alert.alert("Error", "Please select an account type!");
       return;
     }
-
-    pendingUser.length = 0;
-    pendingUser.push({ accountType: selected });
-
-    router.push("/register?pageType=form");
+    router.push({
+      pathname: "/register",
+      params: { pageType: "form", accountType: selected },
+    });
   };
 
   return (
@@ -52,11 +51,10 @@ export default function FirstScreen() {
           Tell us how you would like to use FarmHub
         </Text>
       </View>
-
       <View className="flex">
-        {options.map((option, index) => (
+        {options.map((option) => (
           <RadioButton
-            key={index}
+            key={option.value}
             description={option.description}
             label={option.label}
             selected={selected}
@@ -65,9 +63,8 @@ export default function FirstScreen() {
           />
         ))}
       </View>
-
       <TouchableOpacity
-        className="bg-deep-green text-white  py-3 rounded-xl"
+        className="bg-deep-green text-white py-3 rounded-xl"
         onPress={handleSubmit}
       >
         <Text className="font-poppins-medium text-white text-base text-center">
