@@ -18,10 +18,10 @@ API.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 
 // ---------- AUTH ROUTES ----------
 export const registerUser = (data: Partial<User>) =>
-  API.post<LoginResponse>("/users/register", data);
+  API.post<LoginResponse>("/auth/register", data);
 
 export const loginUser = (data: Pick<User, "email" | "password">) =>
-  API.post<LoginResponse>("/users/login", data);
+  API.post<LoginResponse>("/auth/login", data);
 
 // ---------- USERS ----------
 export const getAllUsers = () => API.get<User[]>("/users");
