@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -9,30 +9,58 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import ads from "../../db/ads.json";
+import { getAllProducts } from "@/api/farmhubapi";
+import { Product } from "@/api/types";
 
 export default function MarketPlace() {
   const { adsType } = useLocalSearchParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!adsType) {
       router.replace("/marketplace?adsType=sell");
+      return;
     }
+
+    const fetchProducts = async () => {
+      try {
+        const res = await getAllProducts();
+        setProducts(res.data);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, [adsType]);
 
   if (!adsType) return null;
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" color="green" />
+      </View>
+    );
+  }
 
-  const filteredAds = ads.filter((ad) => ad.type === adsType);
+  // ✅ Updated filtering: show all posted ads, separate by seller role
+  const filteredAds = products.filter((p) => {
+    if (!p.seller?.role) return true; // include any product without role
+    if (adsType === "sell") return p.seller.role === "farmer";
+    if (adsType === "buy") return p.seller.role === "buyer";
+    return true; // fallback include all
+  });
 
   return (
     <View className="flex-1">
       <Header />
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
         <View className="px-4 py-3">
           <Text className="text-xl font-poppins-medium mb-3">Market place</Text>
           <Text className="text-xs font-poppins mb-3">
@@ -44,14 +72,15 @@ export default function MarketPlace() {
               placeholder="Search"
               className="font-poppins text-sm px-3 py-2 bg-gray rounded-md flex-1"
             />
-
             <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
               <Ionicons name="filter" size={16} color="black" />
             </View>
-
-            <View className="bg-gray h-10 w-10 justify-center items-center rounded-md">
+            <TouchableOpacity
+              className="bg-gray h-10 w-10 justify-center items-center rounded-md"
+              onPress={() => router.push("/postAd")}
+            >
               <AntDesign name="plus" size={16} color="black" />
-            </View>
+            </TouchableOpacity>
           </View>
 
           <View className="bg-gray rounded-full mt-4 h-9 flex-row">

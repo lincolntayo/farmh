@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import AdCard from "@/components/ads/AdCard";
 import Header from "@/components/Header";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -8,20 +8,38 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import savedAds from "../../db/savedAds.json";
+import { getSavedAds } from "@/api/farmhubapi";
 
 export default function Saved() {
   const { adsType } = useLocalSearchParams();
+  const [savedAds, setSavedAds] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!adsType) {
-      router.replace("/saved?adsType=sell"); //  use replace to avoid looping
+      router.replace("/saved?adsType=sell");
+      return;
     }
+
+    fetchSavedAds();
   }, [adsType]);
 
-  if (!adsType) return null; // Prevent rendering before redirect happens
+  const fetchSavedAds = async () => {
+    try {
+      setLoading(true);
+      const response = await getSavedAds();
+      setSavedAds(response.data);
+    } catch (error) {
+      console.error("Error fetching saved ads:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!adsType) return null;
 
   const filteredAds = savedAds.filter((ad) => ad.type === adsType);
 
@@ -72,15 +90,19 @@ export default function Saved() {
             </TouchableOpacity>
           </View>
 
-          <View className="mt-5 flex-1 flex-col gap-y-6">
-            {filteredAds.map((adsData, index) => (
-              <AdCard
-                adsData={adsData}
-                key={index}
-                imageId={Math.floor(Math.random() * 5) + 1}
-              />
-            ))}
-          </View>
+          {loading ? (
+            <ActivityIndicator size="large" className="mt-10" />
+          ) : (
+            <View className="mt-5 flex-1 flex-col gap-y-6">
+              {filteredAds.map((adsData, index) => (
+                <AdCard
+                  adsData={adsData}
+                  key={index}
+                  imageId={Math.floor(Math.random() * 5) + 1}
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

@@ -1,11 +1,12 @@
 import EvilIcons from "@expo/vector-icons/EvilIcons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useState } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
-import savedAds from "../../db/savedAds.json";
+import { useEffect, useState } from "react";
+import { Image, Text, TouchableOpacity, View, Alert } from "react-native";
+import { saveAd, deleteSavedAd, getSavedAds } from "@/api/farmhubapi";
 
 interface AdCardProps {
-  productImage: string;
+  _id?: string;
+  productImage?: string;
   type: string;
   productName: string;
   category: string;
@@ -36,24 +37,36 @@ export default function AdCard({
 }) {
   const [added, setAdded] = useState(false);
   const randomImage = images[imageId as 1 | 2 | 3 | 4 | 5];
+  const image = adsData.productImage ? { uri: adsData.productImage } : randomImage;
 
-  const image = adsData.productImage
-    ? { uri: adsData.productImage }
-    : randomImage;
+  useEffect(() => {
+    // Optionally, you can check if this ad is already saved
+    const fetchSaved = async () => {
+      try {
+        const res = await getSavedAds();
+        const exists = res.data.some((item) => item._id === adsData._id);
+        setAdded(exists);
+      } catch (error) {
+        console.log("Error checking saved ads:", error);
+      }
+    };
+    fetchSaved();
+  }, []);
 
-  const addTofavorites = () => {
-    if (!added) {
-      savedAds.push(adsData);
-    } else {
-      const editedAds = savedAds.filter(
-        (ad) => JSON.stringify(ad) !== JSON.stringify(adsData)
-      );
-
-      savedAds.length = 0;
-      savedAds.push(...editedAds);
+  const addToFavorites = async () => {
+    try {
+      if (!added) {
+        await saveAd(adsData);
+        Alert.alert("Saved", "This product has been added to your saved ads.");
+      } else {
+        if (adsData._id) await deleteSavedAd(adsData._id);
+        Alert.alert("Removed", "This product has been removed from your saved ads.");
+      }
+      setAdded((prev) => !prev);
+    } catch (error) {
+      console.error("Error updating saved ads:", error);
+      Alert.alert("Error", "Could not update saved ads. Try again later.");
     }
-
-    setAdded((prev) => !prev);
   };
 
   return (
@@ -69,7 +82,7 @@ export default function AdCard({
             <Text className="text-xs font-poppins text-sky-blue">Organic</Text>
           </View>
 
-          <Text className="text-xs font-poppins  flex-shrink">
+          <Text className="text-xs font-poppins flex-shrink">
             {adsData.description}
           </Text>
         </View>
@@ -97,11 +110,11 @@ export default function AdCard({
           available
         </Text>
 
-        <TouchableOpacity onPress={addTofavorites}>
+        <TouchableOpacity onPress={addToFavorites}>
           <FontAwesome
             name={added ? "heart" : "heart-o"}
-            size={16}
-            color="black"
+            size={18}
+            color={added ? "red" : "black"}
           />
         </TouchableOpacity>
       </View>
