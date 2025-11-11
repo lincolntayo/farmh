@@ -1,182 +1,51 @@
-// api/farmhubapi.ts
+// src/api/farmhubAPI.ts
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from "axios";
-
-const API_BASE_URL = "https://farmhub-backend-26rg.onrender.com/api";
+import { Comment, LoginResponse, Product, User } from "./types";
 
 const API: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 30000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: "https://farmhub-backend-26rg.onrender.com/api",
 });
 
-// Request interceptor to attach token
-API.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
-    const token = await AsyncStorage.getItem("token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// Automatically attach token to protected routes
+API.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const token = await AsyncStorage.getItem("token");
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Response interceptor for error handling
-API.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("user");
-    }
-    return Promise.reject(error);
-  }
-);
+// ---------- AUTH ROUTES ----------
+export const registerUser = (data: Partial<User>) =>
+  API.post<LoginResponse>("/auth/register", data);
 
-// -------- TYPE DEFINITIONS ----------
-export interface User {
-  _id?: string;
-  name: string;
-  email: string;
-  password?: string;
-  role: "farmer" | "buyer";
-  phoneNumber?: string;
-  farmName?: string;
-  country?: string;
-  state?: string;
-  address?: string;
-  photoID?: string;
-}
+export const loginUser = (data: Pick<User, "email" | "password">) =>
+  API.post<LoginResponse>("/auth/login", data);
 
-export interface LoginResponse {
-  token: string;
-  user: User;
-}
+// ---------- USERS ----------
+export const getAllUsers = () => API.get<User[]>("/users");
 
-export interface Product {
-  _id?: string;
-  name: string;
-  category: string;
-  price: number;
-  quantity: number;
-  description: string;
-  image?: string;
-  farmerId?: string;
-  farmer?: User;
-  createdAt?: string;
-  updatedAt?: string;
-}
+// ---------- FARMERS ----------
+export const registerFarmer = (data: Partial<User>) =>
+  API.post<User>("/farmers/register", data);
 
-export interface Comment {
-  _id?: string;
-  productId: string;
-  userId: string;
-  userName?: string;
-  text: string;
-  createdAt?: string;
-}
+export const getAllFarmers = () => API.get<User[]>("/farmers");
 
-// -------- USER AUTH ROUTES ----------
-export const registerUser = async (data: Partial<User>) => {
-  try {
-    const response = await API.post<LoginResponse>("/users/register", data);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
+// ---------- PRODUCTS ----------
+export const getAllProducts = () => API.get<Product[]>("/products");
+export const createProduct = (data: Product) => API.post<Product>("/products", data);
+export const updateProduct = (id: string, data: Product) => API.put<Product>(`/products/${id}`, data);
+export const deleteProduct = (id: string) => API.delete(`/products/${id}`);
+export const getProductById = (id: string) => API.get<Product>(`/products/${id}`);
 
-export const loginUser = async (data: { email: string; password: string }) => {
-  try {
-    const response = await API.post<LoginResponse>("/users/login", data);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
+// ---------- COMMENTS ----------
+export const getComments = (productId: string) =>
+  API.get<Comment[]>(`/products/${productId}/comments`);
 
-export const getCurrentUser = async () => {
-  try {
-    const response = await API.get<User>("/users/me");
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
+export const addComment = (productId: string, data: { content: string }) =>
+  API.post<Comment>(`/products/${productId}/comments`, data);
 
-// -------- PRODUCT ROUTES ----------
-export const getAllProducts = async () => {
-  try {
-    const response = await API.get<Product[]>("/products");
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
 
-export const createProduct = async (data: FormData) => {
-  try {
-    const response = await API.post<Product>("/products", data, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-export const getProductById = async (id: string) => {
-  try {
-    const response = await API.get<Product>(`/products/${id}`);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-export const updateProduct = async (id: string, data: Partial<Product>) => {
-  try {
-    const response = await API.put<Product>(`/products/${id}`, data);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-export const deleteProduct = async (id: string) => {
-  try {
-    const response = await API.delete(`/products/${id}`);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-// -------- COMMENT ROUTES ----------
-export const getComments = async (productId: string) => {
-  try {
-    const response = await API.get<Comment[]>(`/products/${productId}/comments`);
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-export const addComment = async (productId: string, text: string) => {
-  try {
-    const response = await API.post<Comment>(`/products/${productId}/comments`, { text });
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
 
 export default API;
